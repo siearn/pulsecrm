@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "NEXT_PUBLIC_APP_URL": {
+      "description": "The public URL of your application"
+    },
+    "DATABASE_URL": {
+      "description": "The connection string for your PostgreSQL database"
+    },
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": {
+      "description": "Your Clerk publishable key"
+    },
+    "CLERK_SECRET_KEY": {
+      "description": "Your Clerk secret key"
+    },
+    "CLERK_WEBHOOK_SECRET": {
+      "description": "Your Clerk webhook secret"
+    },
+    "STRIPE_SECRET_KEY": {
+      "description": "Your Stripe secret key"
+    },
+    "STRIPE_WEBHOOK_SECRET": {
+      "description": "Your Stripe webhook secret"
+    },
+    "STRIPE_PRICE_STARTER": {
+      "description": "Stripe price ID for the Starter plan"
+    },
+    "STRIPE_PRICE_PRO": {
+      "description": "Stripe price ID for the Pro plan"
+    },
+    "STRIPE_PRICE_ENTERPRISE": {
+      "description": "Stripe price ID for the Enterprise plan"
+    },
+    "EMAIL_SERVER_HOST": {
+      "description": "SMTP server host"
+    },
+    "EMAIL_SERVER_PORT": {
+      "description": "SMTP server port"
+    },
+    "EMAIL_SERVER_USER": {
+      "description": "SMTP server username"
+    },
+    "EMAIL_SERVER_PASSWORD": {
+      "description": "SMTP server password"
+    },
+    "EMAIL_FROM": {
+      "description": "Email address to send emails from"
+    }
+  }
+}
+

@@ -1,45 +1,49 @@
 import type React from "react"
 import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth/next"
+import { UserButton } from "@clerk/nextjs"
+import { auth } from "@clerk/nextjs/server"
 
-import { authOptions } from "@/lib/auth"
 import { DashboardNav } from "@/components/dashboard/dashboard-nav"
-import { UserAccountNav } from "@/components/dashboard/user-account-nav"
 import { MobileNav } from "@/components/dashboard/mobile-nav"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
-  const session = await getServerSession(authOptions)
+  const { userId } = auth()
 
-  if (!session) {
+  if (!userId) {
     redirect("/login")
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 border-b bg-background">
+    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+      <header className="sticky top-0 z-40 border-b bg-white dark:bg-gray-950 shadow-sm">
         <div className="container flex h-16 items-center justify-between py-4">
           <div className="flex items-center gap-4">
             <MobileNav />
-            <span className="hidden font-bold md:inline-block">PulseCRM</span>
+            <span className="hidden font-bold text-blue-600 md:inline-block">PulseCRM</span>
           </div>
-          <UserAccountNav
-            user={{
-              name: session.user.name,
-              image: session.user.image,
-              email: session.user.email,
-            }}
-          />
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <UserButton
+              afterSignOutUrl="/login"
+              appearance={{
+                elements: {
+                  userButtonAvatarBox: "w-8 h-8",
+                },
+              }}
+            />
+          </div>
         </div>
       </header>
-      <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr] lg:grid-cols-[240px_1fr]">
-        <aside className="hidden w-[200px] flex-col md:flex lg:w-[240px]">
+      <div className="container grid flex-1 gap-12 md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr]">
+        <aside className="hidden w-[240px] flex-col md:flex lg:w-[280px] overflow-y-auto py-6">
           <DashboardNav />
         </aside>
-        <main className="flex w-full flex-1 flex-col overflow-hidden">{children}</main>
+        <main className="flex w-full flex-1 flex-col overflow-hidden py-6">{children}</main>
       </div>
     </div>
   )

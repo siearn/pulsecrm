@@ -26,6 +26,7 @@ export const createStripeCheckoutSession = async (
   quantity: number,
   successUrl: string,
   cancelUrl: string,
+  metadata: Record<string, string | number> = {},
 ) => {
   return await stripe.checkout.sessions.create({
     customer: customerId,
@@ -39,6 +40,10 @@ export const createStripeCheckoutSession = async (
     mode: "subscription",
     success_url: successUrl,
     cancel_url: cancelUrl,
+    subscription_data: {
+      metadata,
+    },
+    metadata,
   })
 }
 

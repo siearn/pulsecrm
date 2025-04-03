@@ -29,14 +29,23 @@ export async function POST(req: Request) {
 
     const hashedPassword = await hash(body.password, 10)
 
-    // Create Stripe customer
-    const stripeCustomer = await createStripeCustomer(body.email, body.companyName)
+    // Create Stripe customer if Stripe is configured
+    let stripeCustomerId = null
+    if (process.env.STRIPE_SECRET_KEY) {
+      try {
+        const stripeCustomer = await createStripeCustomer(body.email, body.companyName)
+        stripeCustomerId = stripeCustomer.id
+      } catch (error) {
+        console.error("Failed to create Stripe customer:", error)
+        // Continue without Stripe customer - we'll create it later if needed
+      }
+    }
 
     // Create company
     const company = await db.company.create({
       data: {
         name: body.companyName,
-        stripeCustomerId: stripeCustomer.id,
+        stripeCustomerId,
         planType: "FREE_TRIAL",
         maxSeats: 5,
         trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now

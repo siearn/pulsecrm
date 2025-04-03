@@ -4,7 +4,7 @@ import type React from "react"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Users, ListTodo, FileText, Settings, Home, UserPlus, PieChart } from "lucide-react"
+import { Users, ListTodo, FileText, Settings, Home, UserPlus, PieChart, CreditCard } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -51,6 +51,11 @@ export function DashboardNav({ className, ...props }: DashboardNavProps) {
       icon: Users,
     },
     {
+      title: "Billing",
+      href: "/dashboard/settings?tab=billing",
+      icon: CreditCard,
+    },
+    {
       title: "Settings",
       href: "/dashboard/settings",
       icon: Settings,
@@ -58,23 +63,29 @@ export function DashboardNav({ className, ...props }: DashboardNavProps) {
   ]
 
   return (
-    <nav className={cn("flex flex-col space-y-1", className)} {...props}>
-      {items.map((item) => (
-        <Button
-          key={item.href}
-          variant={pathname === item.href ? "secondary" : "ghost"}
-          className={cn(
-            "justify-start",
-            pathname === item.href ? "bg-muted hover:bg-muted" : "hover:bg-transparent hover:underline",
-          )}
-          asChild
-        >
-          <Link href={item.href}>
-            <item.icon className="mr-2 h-4 w-4" />
-            {item.title}
-          </Link>
-        </Button>
-      ))}
+    <nav className={cn("flex flex-col space-y-2", className)} {...props}>
+      {items.map((item) => {
+        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+
+        return (
+          <Button
+            key={item.href}
+            variant={isActive ? "default" : "ghost"}
+            className={cn(
+              "justify-start h-10",
+              isActive
+                ? "bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+                : "hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400",
+            )}
+            asChild
+          >
+            <Link href={item.href}>
+              <item.icon className="mr-2 h-5 w-5" />
+              {item.title}
+            </Link>
+          </Button>
+        )
+      })}
     </nav>
   )
 }

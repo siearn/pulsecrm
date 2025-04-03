@@ -35,22 +35,30 @@ interface User {
   email: string
 }
 
+interface Invite {
+  id: string
+  email: string
+  role: string
+}
+
 interface InviteUserDialogProps {
   trigger: React.ReactNode
   company: Company
   teamMembers: User[]
+  pendingInvites: Invite[]
 }
 
 const formSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
+  name: z.string().optional(),
   role: z.enum(["ADMIN", "MANAGER", "USER"], {
     required_error: "Please select a role.",
   }),
 })
 
-export function InviteUserDialog({ trigger, company, teamMembers }: InviteUserDialogProps) {
+export function InviteUserDialog({ trigger, company, teamMembers, pendingInvites }: InviteUserDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -58,41 +66,72 @@ export function InviteUserDialog({ trigger, company, teamMembers }: InviteUserDi
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
+      name: "",
       role: "USER",
     },
   })
 
+  // Calculate seats information
+  const usedSeats = teamMembers.length
+  const pendingSeats = pendingInvites.length
+  const availableSeats = company.maxSeats - usedSeats - pendingSeats
+  const atCapacity = availableSeats <= 0
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
 
-    // Check if we've reached the seat limit
-    if (teamMembers.length >= company.maxSeats) {
-      toast({
-        title: "Seat limit reached",
-        description: `You've reached your plan's limit of ${company.maxSeats} users. Please upgrade your plan to add more users.`,
-        variant: "destructive",
-      })
-      setIsLoading(false)
-      return
-    }
-
-    // Check if the user is already a member
-    const existingMember = teamMembers.find((member) => member.email === values.email)
-
-    if (existingMember) {
-      toast({
-        title: "User already exists",
-        description: "This user is already a member of your team.",
-        variant: "destructive",
-      })
-      setIsLoading(false)
-      return
-    }
-
     try {
-      // Here you would make an API call to send the invitation
-      // For now, we'll just simulate a successful invitation
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Check if we've reached the seat limit
+      if (atCapacity) {
+        toast({
+          title: "Seat limit reached",
+          description: `You've reached your plan's limit of ${company.maxSeats} users. Please upgrade your plan to add more users.`,
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Check if the user is already a member
+      const existingMember = teamMembers.find((member) => member.email.toLowerCase() === values.email.toLowerCase())
+
+      if (existingMember) {
+        toast({
+          title: "User already exists",
+          description: "This user is already a member of your team.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Check if there's already a pending invite
+      const existingInvite = pendingInvites.find((invite) => invite.email.toLowerCase() === values.email.toLowerCase())
+
+      if (existingInvite) {
+        toast({
+          title: "Invitation already sent",
+          description: "An invitation has already been sent to this email address.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Make API call to send the invitation
+      const response = await fetch("/api/invites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: values.email,
+          name: values.name || undefined,
+          role: values.role,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || "Failed to send invitation")
+      }
 
       toast({
         title: "Invitation sent",
@@ -101,10 +140,13 @@ export function InviteUserDialog({ trigger, company, teamMembers }: InviteUserDi
 
       form.reset()
       setOpen(false)
+
+      // Refresh the page to show the new invitation
+      window.location.reload()
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to send invitation. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to send invitation",
         variant: "destructive",
       })
     } finally {
@@ -129,9 +171,22 @@ export function InviteUserDialog({ trigger, company, teamMembers }: InviteUserDi
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email*</FormLabel>
                   <FormControl>
                     <Input placeholder="name@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John Doe" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -142,7 +197,7 @@ export function InviteUserDialog({ trigger, company, teamMembers }: InviteUserDi
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
+                  <FormLabel>Role*</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -160,15 +215,15 @@ export function InviteUserDialog({ trigger, company, teamMembers }: InviteUserDi
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || atCapacity}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Send Invitation
+                {atCapacity ? "No Available Seats" : "Send Invitation"}
               </Button>
             </DialogFooter>
           </form>
         </Form>
         <div className="text-xs text-muted-foreground mt-4">
-          {teamMembers.length} of {company.maxSeats} seats used
+          {usedSeats + pendingSeats} of {company.maxSeats} seats used • {availableSeats} available
         </div>
       </DialogContent>
     </Dialog>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 
 import { SignUpForm } from "@/components/auth/signup-form"
 
@@ -10,18 +11,36 @@ export const metadata: Metadata = {
 
 export default function SignUpPage() {
   return (
-    <div className="container flex h-screen w-screen flex-col items-center justify-center">
-      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-        <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
-          <p className="text-sm text-muted-foreground">Enter your information to create an account</p>
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Left side - Form */}
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
+        <div className="w-full max-w-md">
+          <div className="mb-8 text-center">
+            <Link href="/" className="inline-block">
+              <h1 className="text-3xl font-bold text-blue-600">PulseCRM</h1>
+            </Link>
+          </div>
+          <SignUpForm />
         </div>
-        <SignUpForm />
-        <p className="px-8 text-center text-sm text-muted-foreground">
-          <Link href="/login" className="hover:text-brand underline underline-offset-4">
-            Already have an account? Sign In
-          </Link>
-        </p>
+      </div>
+
+      {/* Right side - Image/Gradient */}
+      <div className="hidden md:flex md:flex-1 gradient-bg items-center justify-center p-8">
+        <div className="max-w-md text-white">
+          <h2 className="text-3xl font-bold mb-4">Start Growing Your Business Today</h2>
+          <p className="text-lg mb-6">
+            Join thousands of businesses using PulseCRM to manage leads, nurture relationships, and close more deals.
+          </p>
+          <div className="rounded-lg overflow-hidden shadow-xl">
+            <Image
+              src="/placeholder.svg?height=300&width=500"
+              alt="CRM Features"
+              width={500}
+              height={300}
+              className="w-full h-auto"
+            />
+          </div>
+        </div>
       </div>
     </div>
   )
