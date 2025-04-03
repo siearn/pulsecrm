@@ -1,0 +1,275 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public", "auth"]
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  companyId     String?
+  company       Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  accounts      Account[]
+  sessions      Session[]
+  leads         Lead[]    @relation("AssignedLeads")
+  tasks         Task[]
+  activities    ActivityLog[]
+
+  @@index([companyId])
+  @@schema("public")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@schema("public")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@schema("public")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@schema("public")
+}
+
+model Company {
+  id                 String         @id @default(cuid())
+  name               String
+  stripeCustomerId   String?        @unique
+  stripeSubscriptionId String?
+  planType           PlanType       @default(FREE_TRIAL)
+  maxSeats           Int            @default(5)
+  trialEndsAt        DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  users              User[]
+  leads              Lead[]
+  customers          Customer[]
+  tasks              Task[]
+  files              File[]
+  activities         ActivityLog[]
+  
+  @@schema("public")
+}
+
+model Lead {
+  id          String       @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  title       String?
+  source      String?
+  status      LeadStatus   @default(NEW)
+  value       Float?
+  notes       String?      @db.Text
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  companyId   String
+  assignedToId String?
+  assignedTo  User?        @relation("AssignedLeads", fields: [assignedToId], references: [id], onDelete: SetNull)
+  companyRel  Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  activities  ActivityLog[]
+  files       File[]
+
+  @@index([companyId])
+  @@index([assignedToId])
+  @@schema("public")
+}
+
+model Customer {
+  id          String       @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  title       String?
+  address     String?      @db.Text
+  notes       String?      @db.Text
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  companyId   String
+  companyRel  Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  activities  ActivityLog[]
+  files       File[]
+
+  @@index([companyId])
+  @@schema("public")
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?      @db.Text
+  dueDate     DateTime?
+  status      TaskStatus   @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  companyId   String
+  userId      String
+  leadId      String?
+  customerId  String?
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lead        Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  activities  ActivityLog[]
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([leadId])
+  @@index([customerId])
+  @@schema("public")
+}
+
+model ActivityLog {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  description String?      @db.Text
+  createdAt   DateTime     @default(now())
+  companyId   String
+  userId      String
+  leadId      String?
+  customerId  String?
+  taskId      String?
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead        Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  task        Task?        @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([leadId])
+  @@index([customerId])
+  @@index([taskId])
+  @@schema("public")
+}
+
+model File {
+  id          String       @id @default(cuid())
+  name        String
+  url         String
+  type        String?
+  size        Int?
+  createdAt   DateTime     @default(now())
+  companyId   String
+  leadId      String?
+  customerId  String?
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lead        Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([leadId])
+  @@index([customerId])
+  @@schema("public")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
+  SUPER_ADMIN
+  
+  @@schema("public")
+}
+
+enum PlanType {
+  FREE_TRIAL
+  STARTER
+  PRO
+  ENTERPRISE
+  
+  @@schema("public")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+  
+  @@schema("public")
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  
+  @@schema("public")
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  
+  @@schema("public")
+}
+
+enum ActivityType {
+  NOTE
+  EMAIL
+  CALL
+  MEETING
+  TASK_CREATED
+  TASK_COMPLETED
+  LEAD_CREATED
+  LEAD_UPDATED
+  LEAD_STATUS_CHANGED
+  CUSTOMER_CREATED
+  CUSTOMER_UPDATED
+  FILE_UPLOADED
+  
+  @@schema("public")
+}
+
